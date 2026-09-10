@@ -1589,7 +1589,43 @@ window.EPIC_CARS_ERAS = [
         "image": "recEASdfUMWsYOGnL-attJD0oxzGc8EVIIg.webp"
       }
     ],
-    "symbols": []
+    "symbols": [
+      {
+        "id": "recYfWwCpbtMaWBu2",
+        "name": "Bang & Olufsen BeoSound 9000, 1996",
+        "image": "recYfWwCpbtMaWBu2-attVezetLFw5XNF79.webp",
+        "width": 1067,
+        "height": 1600
+      },
+      {
+        "id": "recjZz2tXqM504GY1",
+        "name": "Jean Paul Gaultier cone bra / Madonna Blond Ambition, 1990",
+        "image": "recjZz2tXqM504GY1-attOloA6gzHnHbLjN.webp",
+        "width": 800,
+        "height": 1200
+      },
+      {
+        "id": "recuOhvtjfJs2ot2U",
+        "name": "Lloyd’s Building — Richard Rogers, 1986",
+        "image": "recuOhvtjfJs2ot2U-attwrI51oJT10dTIg.webp",
+        "width": 2400,
+        "height": 1800
+      },
+      {
+        "id": "recIzV1NJoRB5Omjr",
+        "name": "Nintendo Game Boy, 1989",
+        "image": "recIzV1NJoRB5Omjr-att1C6hf2VkJxJzGc.webp",
+        "width": 1016,
+        "height": 938
+      },
+      {
+        "id": "recFahu8rTFsXXN0F",
+        "name": "Swatch Jellyfish, 1985",
+        "image": "recFahu8rTFsXXN0F-attxC4GdeOBMX58bH.webp",
+        "width": 1280,
+        "height": 1600
+      }
+    ]
   },
   {
     "id": "new-millennium",

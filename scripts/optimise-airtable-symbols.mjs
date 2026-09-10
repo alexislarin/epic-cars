@@ -8,7 +8,7 @@ const IMAGE_FIELD = 'Image';
 const OUTPUT_FIELD = 'Optimised file name';
 const ASSETS_DIR = path.resolve('assets');
 const MAX_LONG_SIDE = 1200;
-const WEBP_QUALITY = 86;
+const WEBP_QUALITY = 75;
 const RECORDS_JSON = process.env.AIRTABLE_SYMBOLS_RECORDS_JSON;
 const UPDATES_JSON = process.env.AIRTABLE_UPDATES_JSON ?? '/private/tmp/airtable-symbols-image-updates.json';
 

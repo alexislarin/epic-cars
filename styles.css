@@ -44,7 +44,7 @@ body {
 .tune-player {
   display: grid;
   width: 39px;
-  grid-template-rows: 25px 39px;
+  grid-template-rows: 24px 39px;
   justify-items: center;
 }
 
@@ -106,7 +106,7 @@ body {
 }
 
 .era-years {
-  height: 25px;
+  height: 24px;
   align-items: start;
   font-size: 10px;
   font-weight: 400;
@@ -225,6 +225,26 @@ body {
 .era-symbol {
   --symbol-long-side: var(--card-base-width);
   --symbol-cross-factor: 1;
+  --cutout-path: polygon(
+    1px 2px,
+    11% 4px,
+    33% 0,
+    61% 4px,
+    92% 2px,
+    calc(100% - 2px) 3px,
+    100% 14%,
+    calc(100% - 4px) 49%,
+    calc(100% - 2px) 72%,
+    100% calc(100% - 3px),
+    87% 100%,
+    52% calc(100% - 4px),
+    19% 100%,
+    3px calc(100% - 2px),
+    0 84%,
+    4px 57%,
+    2px 26%
+  );
+  isolation: isolate;
 }
 
 .era-symbol.is-landscape {
@@ -237,11 +257,133 @@ body {
   height: var(--symbol-long-side);
 }
 
+.era-symbol:nth-child(6n + 2) {
+  --cutout-path: polygon(
+    3px 0,
+    17% 2px,
+    46% 4px,
+    69% 1px,
+    calc(100% - 3px) 0,
+    100% 19%,
+    calc(100% - 2px) 41%,
+    calc(100% - 4px) 86%,
+    calc(100% - 2px) calc(100% - 2px),
+    73% calc(100% - 4px),
+    44% 100%,
+    8% calc(100% - 2px),
+    0 calc(100% - 3px),
+    2px 71%,
+    4px 38%,
+    2px 9%
+  );
+}
+
+.era-symbol:nth-child(6n + 3) {
+  --cutout-path: polygon(
+    0 3px,
+    24% 0,
+    39% 4px,
+    83% 2px,
+    100% 4px,
+    calc(100% - 4px) 27%,
+    100% 64%,
+    calc(100% - 2px) 79%,
+    calc(100% - 4px) 100%,
+    91% calc(100% - 2px),
+    66% 100%,
+    28% calc(100% - 4px),
+    1px 100%,
+    0 92%,
+    4px 51%,
+    0 31%
+  );
+}
+
+.era-symbol:nth-child(6n + 4) {
+  --cutout-path: polygon(
+    4px 1px,
+    8% 0,
+    35% 4px,
+    57% 1px,
+    76% 4px,
+    calc(100% - 2px) 1px,
+    calc(100% - 4px) 11%,
+    100% 53%,
+    calc(100% - 4px) 74%,
+    100% calc(100% - 4px),
+    78% 100%,
+    49% calc(100% - 2px),
+    36% 100%,
+    3px calc(100% - 3px),
+    2px 69%,
+    0 44%,
+    4px 18%
+  );
+}
+
+.era-symbol:nth-child(6n + 5) {
+  --cutout-path: polygon(
+    1px 4px,
+    21% 2px,
+    58% 0,
+    71% 4px,
+    calc(100% - 3px) 1px,
+    100% 32%,
+    calc(100% - 2px) 47%,
+    calc(100% - 4px) 91%,
+    calc(100% - 2px) 100%,
+    83% calc(100% - 4px),
+    55% 100%,
+    14% calc(100% - 4px),
+    0 calc(100% - 2px),
+    4px 76%,
+    2px 62%,
+    4px 24%
+  );
+}
+
+.era-symbol:nth-child(6n) {
+  --cutout-path: polygon(
+    3px 3px,
+    14% 0,
+    29% 2px,
+    68% 4px,
+    96% 2px,
+    100% 3px,
+    calc(100% - 2px) 22%,
+    calc(100% - 4px) 58%,
+    100% 88%,
+    calc(100% - 3px) calc(100% - 2px),
+    69% 100%,
+    41% calc(100% - 4px),
+    23% 100%,
+    2px calc(100% - 3px),
+    0 82%,
+    4px 35%,
+    2px 16%
+  );
+}
+
 .era-symbol img {
   display: block;
   width: 100%;
   height: 100%;
+  clip-path: var(--cutout-path);
   object-fit: contain;
+  pointer-events: none;
+}
+
+.era-symbol::after {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.34) 0 0.48px, transparent 0.58px) 0 0 / 2.8px 2.8px,
+    radial-gradient(circle, rgba(0, 0, 0, 0.19) 0 0.42px, transparent 0.52px) 1.4px 1.4px / 2.8px 2.8px,
+    repeating-linear-gradient(37deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4.4px);
+  clip-path: var(--cutout-path);
+  content: "";
+  mix-blend-mode: soft-light;
+  opacity: 0.23;
   pointer-events: none;
 }
 
@@ -339,7 +481,7 @@ body {
 
   .tune-player {
     width: 32px;
-    grid-template-rows: 25px 32px;
+    grid-template-rows: 24px 32px;
   }
 
   .tune-button {

@@ -25,6 +25,7 @@ const CENTER_DRAG_WIDTH_RATIO = 0.4;
 const CENTER_DRAG_MAX_WIDTH = 600;
 const FILTER_CLEARANCE = 112;
 const WIDE_PHOTO_CARD_IDS = new Set(["recLYb1bX7ihQTTPs"]);
+const IMAGE_PRELOAD_TIMEOUT = 15000;
 const LAYOUT_BLEED_RATIO = 0;
 const LAYOUT_JITTER_RATIO = 0.28;
 const LAYOUT_MARGIN_X_RATIO = 0.05;
@@ -37,6 +38,7 @@ let isRadioPlaying = false;
 let radioAttemptId = 0;
 let tuningLoopStartToken = 0;
 const layoutsByEraId = new Map();
+const preloadedImageUrls = new Set();
 const radio = new Audio();
 radio.className = "tune-radio";
 radio.preload = "none";
@@ -112,6 +114,98 @@ function getEraItems(era) {
     ...era.cars.map((car) => ({ type: "car", item: car })),
     ...(era.symbols ?? []).map((symbol) => ({ type: "symbol", item: symbol })),
   ];
+}
+
+function getItemImageUrl(item) {
+  return item.image ? `./assets/${item.image}` : "";
+}
+
+function getEraImageUrls(era) {
+  return getEraItems(era).map(({ item }) => getItemImageUrl(item)).filter(Boolean);
+}
+
+function markImagesPreloaded(urls) {
+  urls.forEach((url) => preloadedImageUrls.add(normaliseUrl(url)));
+}
+
+function waitForImageElement(image) {
+  if (image.complete) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    image.addEventListener("load", resolve, { once: true });
+    image.addEventListener("error", resolve, { once: true });
+  });
+}
+
+function waitForRenderedImages(container) {
+  const images = [...container.querySelectorAll("img")];
+
+  if (images.length === 0) {
+    return Promise.resolve();
+  }
+
+  return Promise.all(images.map(waitForImageElement));
+}
+
+function waitForBackgroundTurn() {
+  return new Promise((resolve) => {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(resolve, { timeout: 750 });
+      return;
+    }
+
+    window.setTimeout(resolve, 0);
+  });
+}
+
+function preloadImageUrl(url) {
+  const absoluteUrl = normaliseUrl(url);
+
+  if (!absoluteUrl || preloadedImageUrls.has(absoluteUrl)) {
+    return Promise.resolve();
+  }
+
+  preloadedImageUrls.add(absoluteUrl);
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    let isFinished = false;
+    const finish = () => {
+      if (isFinished) {
+        return;
+      }
+
+      isFinished = true;
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, IMAGE_PRELOAD_TIMEOUT);
+
+    image.onload = finish;
+    image.onerror = finish;
+    image.src = url;
+  });
+}
+
+async function preloadEraImagesInBackground() {
+  for (const era of eras) {
+    await waitForBackgroundTurn();
+
+    for (const imageUrl of getEraImageUrls(era)) {
+      await preloadImageUrl(imageUrl);
+    }
+  }
+}
+
+function preloadRemainingEraImagesAfterInitialRender(initialEra) {
+  const initialEraUrls = getEraImageUrls(initialEra);
+
+  waitForRenderedImages(surface).then(() => {
+    markImagesPreloaded(initialEraUrls);
+    preloadEraImagesInBackground();
+  });
 }
 
 function getCurrentStreamUrl() {
@@ -805,7 +899,9 @@ function onTouchEnd(event) {
 initialiseEraLayouts();
 renderEraFilters();
 renderTuneIcon();
+const initialEra = getCurrentEra();
 renderCards();
+preloadRemainingEraImagesAfterInitialRender(initialEra);
 
 document.body.append(radio, tuningLoop);
 tuneButton?.addEventListener("click", toggleRadio);

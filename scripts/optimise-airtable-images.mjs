@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { renderCarImage, resolveCarImageRule } from './car-image-rules.mjs';
 
 const BASE_ID = 'app1SfYuOy4gWl55g';
 const TABLE_ID = 'tblbeY4fsrRxBNZ2l';
@@ -8,10 +9,6 @@ const IMAGE_FIELD = 'Image';
 const OUTPUT_FIELD = 'Optimised file name';
 const IMAGE_FIELD_ID = 'fldS7fzV7FhfHuBws';
 const ASSETS_DIR = path.resolve('assets');
-const TARGET_RATIO = 3 / 2;
-const TARGET_WIDTH = 1200;
-const TARGET_HEIGHT = Math.round(TARGET_WIDTH / TARGET_RATIO);
-const WEBP_QUALITY = 86;
 const PUBLIC_READ_JSON = process.env.AIRTABLE_PUBLIC_READ_JSON;
 const UPDATES_JSON = process.env.AIRTABLE_UPDATES_JSON ?? '/private/tmp/airtable-image-updates.json';
 
@@ -83,28 +80,6 @@ async function listRecords() {
   return records;
 }
 
-function cropForRatio(width, height) {
-  const sourceRatio = width / height;
-
-  if (sourceRatio > TARGET_RATIO) {
-    const cropWidth = Math.floor(height * TARGET_RATIO);
-    return {
-      left: Math.floor((width - cropWidth) / 2),
-      top: 0,
-      width: cropWidth,
-      height,
-    };
-  }
-
-  const cropHeight = Math.floor(width / TARGET_RATIO);
-  return {
-    left: 0,
-    top: Math.floor((height - cropHeight) / 2),
-    width,
-    height: cropHeight,
-  };
-}
-
 async function download(url) {
   const response = await fetch(url);
 
@@ -125,33 +100,20 @@ async function optimiseRecord(record) {
   const fileName = `${record.id}-${attachment.id}.webp`;
   const outputPath = path.join(ASSETS_DIR, fileName);
   const normalised = await sharp(await download(attachment.url), { failOn: 'none' }).rotate().toBuffer();
-  const image = sharp(normalised, { failOn: 'none' });
-  const metadata = await image.metadata();
-
-  if (!metadata.width || !metadata.height) {
-    throw new Error(`Could not read image dimensions for ${record.id}`);
-  }
-
-  const crop = cropForRatio(metadata.width, metadata.height);
-  const outputWidth = Math.min(TARGET_WIDTH, crop.width);
-  const outputHeight = Math.round(outputWidth / TARGET_RATIO);
-
-  await image
-    .extract(crop)
-    .resize(outputWidth, outputHeight, {
-      fit: 'cover',
-      position: 'centre',
-      withoutEnlargement: true,
-    })
-    .webp({
-      quality: WEBP_QUALITY,
-      effort: 6,
-      smartSubsample: true,
-    })
-    .toFile(outputPath);
+  const rule = resolveCarImageRule(record.id, record.fields?.[OUTPUT_FIELD]);
+  const output = await renderCarImage(normalised, outputPath, rule);
 
   const stats = await fs.stat(outputPath);
-  return { id: record.id, fileName, bytes: stats.size };
+  return {
+    id: record.id,
+    fileName,
+    bytes: stats.size,
+    width: output.width,
+    height: output.height,
+    mode: output.mode,
+    hasInstruction: rule.hasInstruction,
+    hasOverride: rule.hasOverride,
+  };
 }
 
 async function updateRecords(updates) {
@@ -192,7 +154,12 @@ for (const record of records) {
       console.log(`SKIP ${record.id}: ${result.reason}`);
     } else {
       updates.push(result);
-      console.log(`OK ${record.id}: ${result.fileName} ${Math.round(result.bytes / 1024)} KB`);
+      const source = result.hasOverride ? 'override' : result.hasInstruction ? 'instruction' : 'default';
+      console.log(
+        `OK ${record.id}: ${result.fileName} ${result.width}x${result.height} ${result.mode}/${source} ${Math.round(
+          result.bytes / 1024,
+        )} KB`,
+      );
     }
   } catch (error) {
     failed.push({ id: record.id, error: error.message });

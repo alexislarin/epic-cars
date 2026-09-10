@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { renderCarImage, resolveCarImageRule, shouldRefreshCarImage } from './car-image-rules.mjs';
 
 const TABLE_ID = 'tblbeY4fsrRxBNZ2l';
 const IMAGE_FIELD_ID = 'fldS7fzV7FhfHuBws';
@@ -13,8 +14,6 @@ const PUBLIC_READ_JSON = process.env.AIRTABLE_PUBLIC_READ_JSON ?? '/private/tmp/
 const UPDATED_PUBLIC_READ_JSON =
   process.env.AIRTABLE_UPDATED_PUBLIC_READ_JSON ?? '/private/tmp/airtable-public-read-cars-updated.json';
 const UPDATES_JSON = process.env.AIRTABLE_UPDATES_JSON ?? '/private/tmp/airtable-car-image-updates.json';
-const WEBP_QUALITY = 86;
-const DEFAULT_SIZE = { width: 1200, height: 800 };
 
 async function download(url) {
   const response = await fetch(url);
@@ -49,97 +48,13 @@ function signedAttachment(row, tableData) {
   };
 }
 
-function targetFromInstruction(instruction) {
-  const customSize = instruction.match(/custom size\s+(\d+)x(\d+)/i);
-
-  if (customSize) {
-    return {
-      width: Number(customSize[1]),
-      height: Number(customSize[2]),
-    };
-  }
-
-  return DEFAULT_SIZE;
-}
-
-function focalPoint(instruction) {
-  const text = instruction.toLowerCase();
-
-  if (text.includes('crop from the top')) {
-    return { x: 0.5, y: 1 };
-  }
-
-  if (text.includes('crop from the bottom')) {
-    return { x: 0.5, y: 0 };
-  }
-
-  if (text.includes('crop from the left')) {
-    return { x: 1, y: 0.5 };
-  }
-
-  if (text.includes('crop from the right')) {
-    return { x: 0, y: 0.5 };
-  }
-
-  return { x: 0.5, y: 0.5 };
-}
-
-function cropForCover(width, height, target, focus) {
-  const targetRatio = target.width / target.height;
-  const sourceRatio = width / height;
-
-  if (sourceRatio > targetRatio) {
-    const cropWidth = Math.floor(height * targetRatio);
-
-    return {
-      left: Math.round((width - cropWidth) * focus.x),
-      top: 0,
-      width: cropWidth,
-      height,
-    };
-  }
-
-  const cropHeight = Math.floor(width / targetRatio);
-
-  return {
-    left: 0,
-    top: Math.round((height - cropHeight) * focus.y),
-    width,
-    height: cropHeight,
-  };
-}
-
 async function optimise(record, tableData) {
   const { row, attachment, instruction } = record;
   const input = await sharp(await download(attachment.url), { failOn: 'none' }).rotate().toBuffer();
-  const image = sharp(input, { failOn: 'none' });
-  const metadata = await image.metadata();
-
-  if (!metadata.width || !metadata.height) {
-    throw new Error(`Could not read image dimensions for ${row.id}`);
-  }
-
-  const target = targetFromInstruction(instruction);
-  const focus = focalPoint(instruction);
-  const crop = cropForCover(metadata.width, metadata.height, target, focus);
-  const outputWidth = Math.min(target.width, crop.width);
-  const outputHeight = Math.round(outputWidth * (target.height / target.width));
   const fileName = `${row.id}-${attachment.id}.webp`;
   const outputPath = path.join(ASSETS_DIR, fileName);
-
-  await image
-    .extract(crop)
-    .resize(outputWidth, outputHeight, {
-      fit: 'cover',
-      position: 'centre',
-      withoutEnlargement: true,
-    })
-    .webp({
-      quality: WEBP_QUALITY,
-      effort: 6,
-      smartSubsample: true,
-    })
-    .toFile(outputPath);
+  const rule = resolveCarImageRule(row.id, instruction);
+  const output = await renderCarImage(input, outputPath, rule);
 
   const stats = await fs.stat(outputPath);
 
@@ -148,9 +63,12 @@ async function optimise(record, tableData) {
     id: row.id,
     fileName,
     bytes: stats.size,
-    width: outputWidth,
-    height: outputHeight,
-    instruction,
+    width: output.width,
+    height: output.height,
+    mode: output.mode,
+    hasInstruction: rule.hasInstruction,
+    hasOverride: rule.hasOverride,
+    instruction: rule.instruction,
     label: [
       row.cellValuesByColumnId?.[YEAR_FIELD_ID],
       row.cellValuesByColumnId?.[MAKE_FIELD_ID],
@@ -178,7 +96,7 @@ const selected = tableData.rows
       instruction,
     };
   })
-  .filter(({ instruction }) => instruction === '' || instruction.startsWith('//'));
+  .filter(({ row, instruction }) => shouldRefreshCarImage(row.id, instruction));
 
 console.log(`Selected ${selected.length} car records`);
 
@@ -193,7 +111,12 @@ for (const record of selected) {
 
     const update = await optimise(record, tableData);
     updates.push(update);
-    console.log(`OK ${update.id}: ${update.fileName} ${update.width}x${update.height} ${Math.round(update.bytes / 1024)} KB`);
+    const source = update.hasOverride ? 'override' : update.hasInstruction ? 'instruction' : 'default';
+    console.log(
+      `OK ${update.id}: ${update.fileName} ${update.width}x${update.height} ${update.mode}/${source} ${Math.round(
+        update.bytes / 1024,
+      )} KB`,
+    );
   } catch (error) {
     failed.push({
       id: record.row.id,
