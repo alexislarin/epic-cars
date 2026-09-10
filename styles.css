@@ -2,10 +2,22 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-viewport-height: 100vh;
+  --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-viewport-height: 100dvh;
+  }
+}
+
 html,
 body {
   width: 100%;
-  height: 100%;
+  height: var(--app-viewport-height);
+  min-height: var(--app-viewport-height);
 }
 
 body {
@@ -14,12 +26,18 @@ body {
   margin: 0;
   background: #989791;
   overflow: hidden;
+  padding-bottom: var(--app-safe-area-bottom);
 }
 
 .surface {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  height: var(--app-viewport-height);
   overflow: hidden;
+  padding-bottom: var(--app-safe-area-bottom);
   pointer-events: none;
   z-index: 2;
 }
@@ -555,6 +573,10 @@ body {
     column-gap: 20px;
   }
 
+  .canvas-item {
+    --card-base-width: clamp(130px, 12.6vw, 182px);
+  }
+
   .home-link,
   .tune-player {
     width: var(--top-control-height);
@@ -591,6 +613,7 @@ body {
 
   .era-buttons .era-nav {
     display: flex;
+    background: var(--filter-hover-bg);
   }
 
   .era-buttons button.is-active::before,
@@ -600,12 +623,12 @@ body {
 
   .era-buttons button.is-active::before {
     left: -8px;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.2), var(--filter-active-bg));
+    background: linear-gradient(90deg, var(--filter-hover-bg), var(--filter-active-bg));
   }
 
   .era-buttons button.is-active::after {
     right: -8px;
-    background: linear-gradient(90deg, var(--filter-active-bg), rgba(0, 0, 0, 0.2));
+    background: linear-gradient(90deg, var(--filter-active-bg), var(--filter-hover-bg));
   }
 
   .era-buttons button {
@@ -622,6 +645,6 @@ body {
 
 @media (max-width: 720px) {
   .canvas-item {
-    --card-base-width: clamp(168px, 56vw, 218px);
+    --card-base-width: clamp(118px, 39.2vw, 153px);
   }
 }

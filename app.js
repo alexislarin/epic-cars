@@ -39,6 +39,7 @@ let isRadioLoading = false;
 let isRadioPlaying = false;
 let radioAttemptId = 0;
 let tuningLoopStartToken = 0;
+let viewportLayoutFrame = 0;
 const layoutsByEraId = new Map();
 const preloadedImageUrls = new Set();
 const radio = new Audio();
@@ -216,6 +217,30 @@ function getCurrentStreamUrl() {
 
 function normaliseUrl(url) {
   return url ? new URL(url, window.location.href).href : "";
+}
+
+function syncAppViewportHeight() {
+  const visualHeight = window.visualViewport?.height;
+  const height = Number.isFinite(visualHeight) && visualHeight > 0 ? visualHeight : window.innerHeight;
+
+  if (!Number.isFinite(height) || height <= 0) {
+    return;
+  }
+
+  document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(height)}px`);
+}
+
+function scheduleViewportLayout() {
+  if (viewportLayoutFrame) {
+    return;
+  }
+
+  viewportLayoutFrame = requestAnimationFrame(() => {
+    viewportLayoutFrame = 0;
+    syncAppViewportHeight();
+    layoutCards();
+    scheduleTextFit();
+  });
 }
 
 function createLucideSvg(iconNode, name) {
@@ -420,10 +445,11 @@ function getCardLayoutArea(bounds, cardWidth, cardHeight) {
   const marginX = bounds.width * LAYOUT_MARGIN_X_RATIO;
   const marginTop = bounds.height * LAYOUT_MARGIN_TOP_RATIO;
   const marginBottom = bounds.height * LAYOUT_MARGIN_BOTTOM_RATIO;
+  const safeBottom = parseFloat(getComputedStyle(surface).paddingBottom) || 0;
   const left = Math.min(marginX, Math.max(0, (bounds.width - cardWidth) / 2));
   const right = Math.max(left, bounds.width - cardWidth - marginX);
   const top = Math.min(FILTER_CLEARANCE + marginTop, Math.max(0, bounds.height - cardHeight));
-  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom);
+  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom - safeBottom);
 
   return { left, right, top, bottom };
 }
@@ -440,8 +466,8 @@ function positionToRatio(x, y, area) {
   const height = area.bottom - area.top;
 
   return {
-    xRatio: width === 0 ? 0.5 : clamp((x - area.left) / width, 0, 1),
-    yRatio: height === 0 ? 0.5 : clamp((y - area.top) / height, 0, 1),
+    xRatio: width === 0 ? 0.5 : (x - area.left) / width,
+    yRatio: height === 0 ? 0.5 : (y - area.top) / height,
   };
 }
 
@@ -940,6 +966,7 @@ function onTouchEnd(event) {
   }
 }
 
+syncAppViewportHeight();
 initialiseEraLayouts();
 renderEraFilters();
 renderTuneIcon();
@@ -965,10 +992,9 @@ surface.addEventListener("touchstart", onTouchStart, { passive: false });
 window.addEventListener("touchmove", onTouchMove, { passive: false });
 window.addEventListener("touchend", onTouchEnd);
 window.addEventListener("touchcancel", onTouchEnd);
-window.addEventListener("resize", () => {
-  layoutCards();
-  scheduleTextFit();
-});
+window.addEventListener("resize", scheduleViewportLayout);
+window.visualViewport?.addEventListener("resize", scheduleViewportLayout);
+window.visualViewport?.addEventListener("scroll", scheduleViewportLayout);
 
 window.addEventListener("load", scheduleTextFit);
 
