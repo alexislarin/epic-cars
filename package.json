@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "import:content": "node scripts/import-content-data.mjs",
+    "optimise:airtable-images": "node scripts/optimise-airtable-images.mjs",
+    "refresh:airtable-car-images": "node scripts/refresh-airtable-car-images.mjs",
+    "optimise:airtable-symbols": "node scripts/optimise-airtable-symbols.mjs",
+    "repair:image-crops": "node scripts/repair-image-crops.mjs"
+  },
+  "dependencies": {
+    "sharp": "^0.35.4"
+  }
+}

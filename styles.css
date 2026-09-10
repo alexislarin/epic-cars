@@ -1,0 +1,372 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  --filter-active-bg: #4c4c49;
+  --filter-hover-bg: #7a7974;
+  margin: 0;
+  background: #989791;
+  overflow: hidden;
+}
+
+.surface {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.top-controls {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  --top-side-margin: clamp(20px, 7.5vw, 120px);
+  width: min(calc(100vw - var(--top-side-margin) - var(--top-side-margin)), 1712px);
+  grid-template-columns: 39px minmax(0, 1600px);
+  column-gap: 36px;
+  justify-content: center;
+  align-items: start;
+  color: #ffffff;
+  font-family: Barlow, Arial, sans-serif;
+  transform: translateX(-50%);
+}
+
+.tune-player {
+  display: grid;
+  width: 39px;
+  grid-template-rows: 25px 39px;
+  justify-items: center;
+}
+
+.tune-label {
+  font-size: 10px;
+  font-weight: 400;
+  line-height: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tune-button {
+  display: flex;
+  width: 39px;
+  height: 39px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 100px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  cursor: pointer;
+}
+
+.tune-button:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.tune-button svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  stroke-width: 2;
+}
+
+.tune-button.is-loading svg {
+  animation: tune-spin 900ms linear infinite;
+}
+
+@keyframes tune-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.era-filter {
+  width: 100%;
+  height: 64px;
+  color: #ffffff;
+  font-family: Barlow, Arial, sans-serif;
+}
+
+.era-years,
+.era-buttons {
+  display: grid;
+  grid-template-columns: repeat(var(--era-count, 7), minmax(0, 1fr));
+  width: 100%;
+}
+
+.era-years {
+  height: 25px;
+  align-items: start;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.era-years > span {
+  display: flex;
+  min-width: 0;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.era-years > span > span {
+  flex: 1 0 0;
+  min-width: 0;
+}
+
+.era-buttons {
+  height: 39px;
+  align-items: center;
+}
+
+.era-buttons button {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  height: 39px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 100px;
+  padding: 10px;
+  background: transparent;
+  color: inherit;
+  font: 500 16px/normal Barlow, Arial, sans-serif;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.era-buttons button::before {
+  position: absolute;
+  top: 4px;
+  width: 16px;
+  height: 31px;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  clip-path: path("M0 0C3.8 4.2 5.2 7 8 7C10.8 7 12.2 4.2 16 0V31C12.2 26.8 10.8 24 8 24C5.2 24 3.8 26.8 0 31Z");
+  transition: opacity 140ms ease;
+}
+
+.era-buttons button.has-active-before::before {
+  left: -8px;
+  background: linear-gradient(90deg, var(--filter-active-bg), var(--filter-hover-bg));
+  opacity: 1;
+}
+
+.era-buttons button.has-active-after::before {
+  right: -8px;
+  background: linear-gradient(90deg, var(--filter-hover-bg), var(--filter-active-bg));
+  opacity: 1;
+}
+
+.era-buttons button:hover {
+  background: var(--filter-hover-bg);
+}
+
+.era-buttons button.is-active {
+  background: var(--filter-active-bg);
+}
+
+.canvas-item {
+  position: absolute;
+  --card-base-width: clamp(186px, 18vw, 260px);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: grab;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.16));
+  pointer-events: auto;
+  touch-action: none;
+  container-type: inline-size;
+  transform: translate(var(--x), var(--y)) rotate(var(--rotation));
+  transform-origin: 50% 50%;
+  user-select: none;
+  will-change: transform;
+  transition:
+    filter 140ms ease,
+    height 140ms ease,
+    width 140ms ease,
+    transform 140ms ease;
+}
+
+.car-card {
+  --card-width-factor: 1;
+  width: var(--card-width, calc(var(--card-base-width) * var(--card-width-factor)));
+  container-type: inline-size;
+}
+
+.car-card.is-wide-photo {
+  --card-width-factor: 1.26144;
+}
+
+.canvas-item:active {
+  cursor: grabbing;
+}
+
+.canvas-item.is-dragging {
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
+  transition: filter 140ms ease;
+}
+
+.era-symbol {
+  --symbol-long-side: var(--card-base-width);
+  --symbol-cross-factor: 1;
+}
+
+.era-symbol.is-landscape {
+  width: var(--symbol-long-side);
+  height: calc(var(--symbol-long-side) * var(--symbol-cross-factor));
+}
+
+.era-symbol.is-portrait {
+  width: calc(var(--symbol-long-side) * var(--symbol-cross-factor));
+  height: var(--symbol-long-side);
+}
+
+.era-symbol img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.card-face {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1.25cqw;
+  align-items: stretch;
+  padding: 2.5cqw;
+  background: #ffffff;
+}
+
+.photo-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.car-card.is-wide-photo .photo-wrap {
+  aspect-ratio: 2 / 1;
+}
+
+.photo-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.card-info {
+  display: grid;
+  width: 100%;
+  height: 7.5cqw;
+  column-gap: 0.5cqw;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  color: #000000;
+}
+
+.make,
+.model {
+  min-width: 0;
+  overflow: hidden;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: calc(6cqw * var(--label-scale, 1));
+  font-weight: 600;
+  line-height: normal;
+  text-overflow: clip;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.make {
+  text-align: left;
+}
+
+.model {
+  text-align: center;
+}
+
+.meta {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  font-family: Barlow, Arial, sans-serif;
+  font-size: 2.5cqw;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.year,
+.country {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+  .top-controls {
+    width: calc(100vw - 20px);
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .tune-player {
+    width: 32px;
+    grid-template-rows: 25px 32px;
+  }
+
+  .tune-button {
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+  }
+
+  .tune-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .era-years {
+    font-size: 8px;
+  }
+
+  .era-buttons button {
+    padding: 6px 2px;
+    font-size: clamp(8px, 1.6vw, 14px);
+    line-height: 1.05;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 720px) {
+  .canvas-item {
+    --card-base-width: clamp(168px, 56vw, 218px);
+  }
+}

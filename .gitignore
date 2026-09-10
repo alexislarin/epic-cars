@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+
+# Local secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*
+*secrets*
+
+# Local Airtable exports/manifests used by scripts
+airtable-*.json

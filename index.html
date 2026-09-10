@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Epic Cars</title>
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css?v=space-age-cards-31" />
+  </head>
+  <body>
+    <header class="top-controls">
+      <div class="tune-player" aria-label="Radio player">
+        <span class="tune-label">TUNE</span>
+        <button class="tune-button" type="button" aria-label="Play radio" aria-pressed="false"></button>
+      </div>
+      <nav class="era-filter" aria-label="Car eras">
+        <div class="era-years" aria-hidden="true"></div>
+        <div class="era-buttons"></div>
+      </nav>
+    </header>
+    <main class="surface" id="surface" aria-label="Pioneers car cards"></main>
+
+    <script src="./data/eras.js?v=space-age-cards-31"></script>
+    <script type="module" src="./app.js?v=space-age-cards-31"></script>
+  </body>
+</html>
