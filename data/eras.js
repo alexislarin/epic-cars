@@ -572,7 +572,7 @@ window.EPIC_CARS_ERAS = [
         "make": "ZIL",
         "model": "118",
         "year": "1962",
-        "country": "Russia",
+        "country": "USSR",
         "image": "recjQNbQwkbHUhULO-attesH3OFECFeXv69.webp"
       },
       {

@@ -296,7 +296,12 @@ body {
   width: var(--card-width, calc(var(--card-base-width) * var(--card-width-factor)));
   container-type: inline-size;
   opacity: 0.95;
-  transition: opacity 140ms ease;
+  transition:
+    filter 140ms ease,
+    height 140ms ease,
+    width 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
 }
 
 .car-card.is-wide-photo {
@@ -314,6 +319,15 @@ body {
 .canvas-item.is-dragging {
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
   transition: filter 140ms ease;
+}
+
+.canvas-item.is-lifting {
+  transition:
+    filter 140ms ease,
+    height 140ms ease,
+    width 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
 }
 
 .era-symbol {

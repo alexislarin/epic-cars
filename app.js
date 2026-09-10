@@ -25,6 +25,7 @@ const CARD_ROTATIONS = [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, 3, 4, 5, 6, 7
 const EDGE_DRAG_SCALE = 1.16;
 const CENTER_DRAG_WIDTH_RATIO = 0.4;
 const CENTER_DRAG_MAX_WIDTH = 600;
+const DRAG_LIFT_TRANSITION_MS = 140;
 const FILTER_CLEARANCE = 112;
 const WIDE_PHOTO_CARD_IDS = new Set(["recLYb1bX7ihQTTPs"]);
 const IMAGE_PRELOAD_TIMEOUT = 15000;
@@ -875,9 +876,14 @@ function beginDrag(card, clientX, clientY, pointerId = "mouse") {
     currentLongSide: baseLongSide,
     grabOffsetX: clientX - bounds.left - x,
     grabOffsetY: clientY - bounds.top - y,
+    liftTimer: window.setTimeout(() => {
+      if (active?.card === card) {
+        card.classList.remove("is-lifting");
+      }
+    }, DRAG_LIFT_TRANSITION_MS),
   };
 
-  card.classList.add("is-dragging");
+  card.classList.add("is-dragging", "is-lifting");
   card.style.zIndex = String(++topZ);
   moveActiveCard(clientX, clientY);
 }
@@ -895,7 +901,9 @@ function finishDrag(pointerId = active?.pointerId) {
     return;
   }
 
+  window.clearTimeout(active.liftTimer);
   active.card.classList.remove("is-dragging");
+  active.card.classList.remove("is-lifting");
   const x = Number(active.card.dataset.x) + (active.currentWidth - active.baseWidth) / 2;
   const y = Number(active.card.dataset.y) + (active.currentHeight - active.baseHeight) / 2;
   const rotation = randomRotation(active.originalRotation);
