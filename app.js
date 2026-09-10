@@ -29,6 +29,7 @@ const DRAG_LIFT_TRANSITION_MS = 140;
 const FILTER_CLEARANCE = 112;
 const WIDE_PHOTO_CARD_IDS = new Set(["recLYb1bX7ihQTTPs"]);
 const IMAGE_PRELOAD_TIMEOUT = 15000;
+const IMAGE_PRELOAD_CONCURRENCY = 10;
 const LAYOUT_BLEED_RATIO = 0;
 const LAYOUT_JITTER_RATIO = 0.28;
 const LAYOUT_MARGIN_X_RATIO = 0.05;
@@ -43,6 +44,7 @@ let tuningLoopStartToken = 0;
 let viewportLayoutFrame = 0;
 const layoutsByEraId = new Map();
 const preloadedImageUrls = new Set();
+const imagePreloadPromisesByUrl = new Map();
 const radio = new Audio();
 radio.className = "tune-radio";
 radio.preload = "none";
@@ -132,6 +134,21 @@ function markImagesPreloaded(urls) {
   urls.forEach((url) => preloadedImageUrls.add(normaliseUrl(url)));
 }
 
+function uniqueImageUrls(urls) {
+  const seen = new Set();
+
+  return urls.filter((url) => {
+    const absoluteUrl = normaliseUrl(url);
+
+    if (!absoluteUrl || seen.has(absoluteUrl)) {
+      return false;
+    }
+
+    seen.add(absoluteUrl);
+    return true;
+  });
+}
+
 function waitForImageElement(image) {
   if (image.complete) {
     return Promise.resolve();
@@ -153,17 +170,6 @@ function waitForRenderedImages(container) {
   return Promise.all(images.map(waitForImageElement));
 }
 
-function waitForBackgroundTurn() {
-  return new Promise((resolve) => {
-    if ("requestIdleCallback" in window) {
-      window.requestIdleCallback(resolve, { timeout: 750 });
-      return;
-    }
-
-    window.setTimeout(resolve, 0);
-  });
-}
-
 function preloadImageUrl(url) {
   const absoluteUrl = normaliseUrl(url);
 
@@ -171,9 +177,13 @@ function preloadImageUrl(url) {
     return Promise.resolve();
   }
 
+  if (imagePreloadPromisesByUrl.has(absoluteUrl)) {
+    return imagePreloadPromisesByUrl.get(absoluteUrl);
+  }
+
   preloadedImageUrls.add(absoluteUrl);
 
-  return new Promise((resolve) => {
+  const preloadPromise = new Promise((resolve) => {
     const image = new Image();
     let isFinished = false;
     const finish = () => {
@@ -189,18 +199,57 @@ function preloadImageUrl(url) {
 
     image.onload = finish;
     image.onerror = finish;
+    image.decoding = "async";
     image.src = url;
   });
+
+  imagePreloadPromisesByUrl.set(absoluteUrl, preloadPromise);
+  return preloadPromise;
 }
 
-async function preloadEraImagesInBackground() {
-  for (const era of eras) {
-    await waitForBackgroundTurn();
+function preloadImageUrlsInParallel(urls, concurrency = IMAGE_PRELOAD_CONCURRENCY) {
+  const queue = uniqueImageUrls(urls);
+  let nextIndex = 0;
 
-    for (const imageUrl of getEraImageUrls(era)) {
+  if (queue.length === 0) {
+    return Promise.resolve();
+  }
+
+  const workerCount = Math.min(concurrency, queue.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < queue.length) {
+      const imageUrl = queue[nextIndex];
+      nextIndex += 1;
       await preloadImageUrl(imageUrl);
     }
-  }
+  });
+
+  return Promise.all(workers);
+}
+
+function getOrderedBackgroundEras(anchorEra) {
+  const anchorIndex = eras.findIndex((era) => era.id === anchorEra?.id);
+  const safeAnchorIndex = anchorIndex === -1 ? 0 : anchorIndex;
+
+  return eras
+    .map((era, index) => ({
+      era,
+      distance: Math.abs(index - safeAnchorIndex),
+      index,
+    }))
+    .filter(({ era }) => era.id !== anchorEra?.id)
+    .sort((left, right) => left.distance - right.distance || left.index - right.index)
+    .map(({ era }) => era);
+}
+
+function preloadEraImages(era) {
+  return preloadImageUrlsInParallel(getEraImageUrls(era));
+}
+
+async function preloadEraImagesInBackground(anchorEra) {
+  const backgroundUrls = getOrderedBackgroundEras(anchorEra).flatMap(getEraImageUrls);
+
+  await preloadImageUrlsInParallel(backgroundUrls);
 }
 
 function preloadRemainingEraImagesAfterInitialRender(initialEra) {
@@ -208,7 +257,7 @@ function preloadRemainingEraImagesAfterInitialRender(initialEra) {
 
   waitForRenderedImages(surface).then(() => {
     markImagesPreloaded(initialEraUrls);
-    preloadEraImagesInBackground();
+    preloadEraImagesInBackground(initialEra);
   });
 }
 
@@ -481,8 +530,10 @@ function selectEraByIndex(index) {
 
   currentEraId = nextEra.id;
   active = null;
+  preloadEraImages(nextEra);
   renderEraFilters();
   renderCards();
+  preloadEraImagesInBackground(nextEra);
   syncRadioWithEra();
 }
 
@@ -560,6 +611,7 @@ function renderEraFilters() {
     });
 
     button.addEventListener("mouseenter", () => {
+      preloadEraImages(era);
       clearAdjacentHover();
 
       if (Math.abs(index - activeEraIndex) !== 1) {
@@ -571,6 +623,7 @@ function renderEraFilters() {
 
     button.addEventListener("mouseleave", clearAdjacentHover);
     button.addEventListener("focus", () => {
+      preloadEraImages(era);
       clearAdjacentHover();
 
       if (Math.abs(index - activeEraIndex) !== 1) {
