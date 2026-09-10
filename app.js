@@ -1,3 +1,5 @@
+import ChevronsLeft from "https://unpkg.com/lucide@1.43.0/dist/esm/icons/chevrons-left.mjs";
+import ChevronsRight from "https://unpkg.com/lucide@1.43.0/dist/esm/icons/chevrons-right.mjs";
 import LoaderCircle from "https://unpkg.com/lucide@1.43.0/dist/esm/icons/loader-circle.mjs";
 import Pause from "https://unpkg.com/lucide@1.43.0/dist/esm/icons/pause.mjs";
 import Play from "https://unpkg.com/lucide@1.43.0/dist/esm/icons/play.mjs";
@@ -443,6 +445,46 @@ function positionToRatio(x, y, area) {
   };
 }
 
+function selectEraByIndex(index) {
+  const nextEra = eras[index];
+
+  if (!nextEra || currentEraId === nextEra.id) {
+    return;
+  }
+
+  currentEraId = nextEra.id;
+  active = null;
+  renderEraFilters();
+  renderCards();
+  syncRadioWithEra();
+}
+
+function selectEraByOffset(offset, activeEraIndex) {
+  if (eras.length === 0) {
+    return;
+  }
+
+  const currentIndex = activeEraIndex === -1 ? 0 : activeEraIndex;
+  const nextIndex = (currentIndex + offset + eras.length) % eras.length;
+
+  selectEraByIndex(nextIndex);
+}
+
+function createEraNavButton(direction, activeEraIndex) {
+  const button = document.createElement("button");
+  const isPrevious = direction === "previous";
+  const icon = isPrevious ? ChevronsLeft : ChevronsRight;
+  const iconName = isPrevious ? "chevrons-left" : "chevrons-right";
+
+  button.type = "button";
+  button.className = `era-nav era-nav-${isPrevious ? "prev" : "next"}`;
+  button.setAttribute("aria-label", isPrevious ? "Previous era" : "Next era");
+  button.replaceChildren(createLucideSvg(icon, iconName));
+  button.addEventListener("click", () => selectEraByOffset(isPrevious ? -1 : 1, activeEraIndex));
+
+  return button;
+}
+
 function renderEraFilters() {
   if (!eraYears || !eraButtons) {
     return;
@@ -463,12 +505,17 @@ function renderEraFilters() {
 
   eras.forEach((era, index) => {
     const yearsGroup = document.createElement("span");
+    yearsGroup.dataset.eraId = era.id;
 
     era.years.forEach((year) => {
       const yearItem = document.createElement("span");
       yearItem.textContent = year;
       yearsGroup.append(yearItem);
     });
+
+    if (era.id === currentEraId) {
+      yearsGroup.classList.add("is-active");
+    }
 
     const button = document.createElement("button");
     button.type = "button";
@@ -482,15 +529,7 @@ function renderEraFilters() {
     }
 
     button.addEventListener("click", () => {
-      if (currentEraId === era.id) {
-        return;
-      }
-
-      currentEraId = era.id;
-      active = null;
-      renderEraFilters();
-      renderCards();
-      syncRadioWithEra();
+      selectEraByIndex(index);
     });
 
     button.addEventListener("mouseenter", () => {
@@ -516,8 +555,13 @@ function renderEraFilters() {
     button.addEventListener("blur", clearAdjacentHover);
 
     eraYears.append(yearsGroup);
+    if (index === 0) {
+      eraButtons.append(createEraNavButton("previous", activeEraIndex));
+    }
     eraButtons.append(button);
   });
+
+  eraButtons.append(createEraNavButton("next", activeEraIndex));
 }
 
 function carTitle(car) {
