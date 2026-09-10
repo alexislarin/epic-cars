@@ -5,6 +5,7 @@
 :root {
   --app-viewport-height: 100vh;
   --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --app-browser-bottom-offset: 0px;
 }
 
 @supports (height: 100dvh) {
@@ -575,6 +576,7 @@ body {
 
   .canvas-item {
     --card-base-width: clamp(130px, 12.6vw, 182px);
+    --drag-width-scale: 1.42857;
   }
 
   .home-link,

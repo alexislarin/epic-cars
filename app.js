@@ -33,6 +33,9 @@ const LAYOUT_JITTER_RATIO = 0.28;
 const LAYOUT_MARGIN_X_RATIO = 0.05;
 const LAYOUT_MARGIN_TOP_RATIO = 0;
 const LAYOUT_MARGIN_BOTTOM_RATIO = 0.05;
+const IOS_BROWSER_BOTTOM_OFFSET_MIN = 128;
+const IOS_BROWSER_BOTTOM_OFFSET_MAX = 168;
+const IOS_BROWSER_BOTTOM_OFFSET_RATIO = 0.18;
 let topZ = 0;
 let active = null;
 let isRadioLoading = false;
@@ -219,6 +222,17 @@ function normaliseUrl(url) {
   return url ? new URL(url, window.location.href).href : "";
 }
 
+function isIosBrowser() {
+  const platform = navigator.platform || "";
+  const userAgent = navigator.userAgent || "";
+  const isClassicIos = /iPad|iPhone|iPod/.test(platform) || /iPad|iPhone|iPod/.test(userAgent);
+  const isTouchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  const isStandalone =
+    window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches;
+
+  return (isClassicIos || isTouchMac) && !isStandalone;
+}
+
 function syncAppViewportHeight() {
   const visualHeight = window.visualViewport?.height;
   const height = Number.isFinite(visualHeight) && visualHeight > 0 ? visualHeight : window.innerHeight;
@@ -228,6 +242,16 @@ function syncAppViewportHeight() {
   }
 
   document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(height)}px`);
+
+  const browserOffset = isIosBrowser()
+    ? clamp(
+        Math.round(height * IOS_BROWSER_BOTTOM_OFFSET_RATIO),
+        IOS_BROWSER_BOTTOM_OFFSET_MIN,
+        IOS_BROWSER_BOTTOM_OFFSET_MAX,
+      )
+    : 0;
+
+  document.documentElement.style.setProperty("--app-browser-bottom-offset", `${browserOffset}px`);
 }
 
 function scheduleViewportLayout() {
@@ -445,11 +469,14 @@ function getCardLayoutArea(bounds, cardWidth, cardHeight) {
   const marginX = bounds.width * LAYOUT_MARGIN_X_RATIO;
   const marginTop = bounds.height * LAYOUT_MARGIN_TOP_RATIO;
   const marginBottom = bounds.height * LAYOUT_MARGIN_BOTTOM_RATIO;
+  const rootStyle = getComputedStyle(document.documentElement);
   const safeBottom = parseFloat(getComputedStyle(surface).paddingBottom) || 0;
+  const browserBottomOffset = parseFloat(rootStyle.getPropertyValue("--app-browser-bottom-offset")) || 0;
+  const bottomClearance = safeBottom + browserBottomOffset;
   const left = Math.min(marginX, Math.max(0, (bounds.width - cardWidth) / 2));
   const right = Math.max(left, bounds.width - cardWidth - marginX);
   const top = Math.min(FILTER_CLEARANCE + marginTop, Math.max(0, bounds.height - cardHeight));
-  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom - safeBottom);
+  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom - bottomClearance);
 
   return { left, right, top, bottom };
 }
@@ -768,7 +795,7 @@ function getDragWidth(activeDrag, clientX, clientY) {
   const bounds = surface.getBoundingClientRect();
   const pointerX = clientX - bounds.left;
   const pointerY = clientY - bounds.top;
-  const edgeWidth = activeDrag.baseLongSide * EDGE_DRAG_SCALE;
+  const edgeWidth = (activeDrag.dragBaseLongSide ?? activeDrag.baseLongSide) * EDGE_DRAG_SCALE;
   const centerWidth = Math.max(edgeWidth, Math.min(bounds.width * CENTER_DRAG_WIDTH_RATIO, CENTER_DRAG_MAX_WIDTH));
   let width = activeDrag.currentLongSide;
 
@@ -828,18 +855,24 @@ function beginDrag(card, clientX, clientY, pointerId = "mouse") {
   const originalRotation = Number(card.dataset.rotation || 0);
   const x = Number(card.dataset.x);
   const y = Number(card.dataset.y);
+  const dragWidthScale = parseFloat(getComputedStyle(card).getPropertyValue("--drag-width-scale")) || 1;
+  const baseWidth = card.offsetWidth;
+  const baseHeight = card.offsetHeight;
+  const baseLongSide = Math.max(baseWidth, baseHeight);
+  const dragBaseLongSide = baseLongSide * dragWidthScale;
 
   active = {
     card,
     index: Number(card.dataset.index),
     pointerId,
     originalRotation,
-    baseWidth: card.offsetWidth,
-    baseHeight: card.offsetHeight,
-    baseLongSide: Math.max(card.offsetWidth, card.offsetHeight),
-    currentWidth: card.offsetWidth,
-    currentHeight: card.offsetHeight,
-    currentLongSide: Math.max(card.offsetWidth, card.offsetHeight),
+    baseWidth,
+    baseHeight,
+    baseLongSide,
+    dragBaseLongSide,
+    currentWidth: baseWidth,
+    currentHeight: baseHeight,
+    currentLongSide: baseLongSide,
     grabOffsetX: clientX - bounds.left - x,
     grabOffsetY: clientY - bounds.top - y,
   };
