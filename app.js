@@ -34,9 +34,6 @@ const LAYOUT_JITTER_RATIO = 0.28;
 const LAYOUT_MARGIN_X_RATIO = 0.05;
 const LAYOUT_MARGIN_TOP_RATIO = 0;
 const LAYOUT_MARGIN_BOTTOM_RATIO = 0.05;
-const IOS_BROWSER_BOTTOM_OFFSET_MIN = 128;
-const IOS_BROWSER_BOTTOM_OFFSET_MAX = 168;
-const IOS_BROWSER_BOTTOM_OFFSET_RATIO = 0.18;
 let topZ = 0;
 let active = null;
 let isRadioLoading = false;
@@ -223,17 +220,6 @@ function normaliseUrl(url) {
   return url ? new URL(url, window.location.href).href : "";
 }
 
-function isIosBrowser() {
-  const platform = navigator.platform || "";
-  const userAgent = navigator.userAgent || "";
-  const isClassicIos = /iPad|iPhone|iPod/.test(platform) || /iPad|iPhone|iPod/.test(userAgent);
-  const isTouchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
-  const isStandalone =
-    window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches;
-
-  return (isClassicIos || isTouchMac) && !isStandalone;
-}
-
 function syncAppViewportHeight() {
   const visualHeight = window.visualViewport?.height;
   const height = Number.isFinite(visualHeight) && visualHeight > 0 ? visualHeight : window.innerHeight;
@@ -243,16 +229,6 @@ function syncAppViewportHeight() {
   }
 
   document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(height)}px`);
-
-  const browserOffset = isIosBrowser()
-    ? clamp(
-        Math.round(height * IOS_BROWSER_BOTTOM_OFFSET_RATIO),
-        IOS_BROWSER_BOTTOM_OFFSET_MIN,
-        IOS_BROWSER_BOTTOM_OFFSET_MAX,
-      )
-    : 0;
-
-  document.documentElement.style.setProperty("--app-browser-bottom-offset", `${browserOffset}px`);
 }
 
 function scheduleViewportLayout() {
@@ -470,14 +446,11 @@ function getCardLayoutArea(bounds, cardWidth, cardHeight) {
   const marginX = bounds.width * LAYOUT_MARGIN_X_RATIO;
   const marginTop = bounds.height * LAYOUT_MARGIN_TOP_RATIO;
   const marginBottom = bounds.height * LAYOUT_MARGIN_BOTTOM_RATIO;
-  const rootStyle = getComputedStyle(document.documentElement);
   const safeBottom = parseFloat(getComputedStyle(surface).paddingBottom) || 0;
-  const browserBottomOffset = parseFloat(rootStyle.getPropertyValue("--app-browser-bottom-offset")) || 0;
-  const bottomClearance = safeBottom + browserBottomOffset;
   const left = Math.min(marginX, Math.max(0, (bounds.width - cardWidth) / 2));
   const right = Math.max(left, bounds.width - cardWidth - marginX);
   const top = Math.min(FILTER_CLEARANCE + marginTop, Math.max(0, bounds.height - cardHeight));
-  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom - bottomClearance);
+  const bottom = Math.max(top, bounds.height - cardHeight - marginBottom - safeBottom);
 
   return { left, right, top, bottom };
 }
