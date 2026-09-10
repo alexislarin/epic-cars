@@ -195,7 +195,7 @@ window.EPIC_CARS_ERAS = [
   },
   {
     "id": "postwar-modernism",
-    "label": "Postwar Modernism",
+    "label": "Postwar Modern",
     "years": [
       "1940",
       "1950"
@@ -1629,7 +1629,7 @@ window.EPIC_CARS_ERAS = [
   },
   {
     "id": "new-millennium",
-    "label": "New Millennium",
+    "label": "Millennium",
     "years": [
       "2000"
     ],

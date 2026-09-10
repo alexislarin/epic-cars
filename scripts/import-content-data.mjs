@@ -46,11 +46,11 @@ const REGIONS_BY_SELECT_ID = {
 
 const ERAS = [
   { id: 'pioneers', label: 'Pioneers', airtableName: 'Pioneers (1900–1938)', years: ['1900', '1910', '1920', '1930'] },
-  { id: 'postwar-modernism', label: 'Postwar Modernism', airtableName: 'Postwar Modernism (1939–1959)', years: ['1940', '1950'] },
+  { id: 'postwar-modernism', label: 'Postwar Modern', airtableName: 'Postwar Modern (1939–1959)', years: ['1940', '1950'] },
   { id: 'space-age', label: 'Space Age', airtableName: 'Space Age (1960–1973)', years: ['1960'] },
   { id: 'wedge-era', label: 'Wedge Era', airtableName: 'Wedge Era (1974–1986)', years: ['1970', '1980'] },
   { id: 'analog-future', label: 'Analog Future', airtableName: 'Analog Future (1987–1999)', years: ['1990'] },
-  { id: 'new-millennium', label: 'New Millennium', airtableName: 'New Millennium (2000–2012)', years: ['2000'] },
+  { id: 'new-millennium', label: 'Millennium', airtableName: 'Millennium (2000–2012)', years: ['2000'] },
   { id: 'electric-age', label: 'Electric Age', airtableName: 'Electric Age (2013–…)', years: ['2010', '2020', '2030'] },
 ];
 
