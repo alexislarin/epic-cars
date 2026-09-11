@@ -9,6 +9,8 @@ const ASSETS_DIR = path.resolve('assets');
 const OUTPUT_PATH = path.join(DATA_DIR, 'eras.js');
 const PUBLIC_READ_JSON = process.env.AIRTABLE_PUBLIC_READ_JSON ?? '/private/tmp/airtable-public-read.json';
 const SYMBOLS_PUBLIC_READ_JSON = process.env.AIRTABLE_SYMBOLS_PUBLIC_READ_JSON ?? '/private/tmp/airtable-public-read-symbols.json';
+const CARS_RECORDS_JSON = process.env.AIRTABLE_CARS_RECORDS_JSON;
+const SYMBOLS_RECORDS_JSON = process.env.AIRTABLE_SYMBOLS_RECORDS_JSON;
 
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log(`Usage: npm run import:content
@@ -106,7 +108,24 @@ async function listRecordsFromPublicJson(filePath, tableId) {
   return tableData.rows.map((row) => ({ id: row.id, fields: row.cellValuesByColumnId ?? {} }));
 }
 
-async function listRecords(tableId, fieldIds, filePath) {
+async function listRecordsFromCliJson(filePath) {
+  const payload = JSON.parse(await fs.readFile(filePath, 'utf8'));
+
+  if (!Array.isArray(payload.records)) {
+    throw new Error(`Expected a CLI record response in ${filePath}`);
+  }
+
+  return payload.records.map((record) => ({
+    id: record.id,
+    fields: record.cellValuesByFieldId ?? {},
+  }));
+}
+
+async function listRecords(tableId, fieldIds, filePath, cliRecordsPath) {
+  if (cliRecordsPath) {
+    return listRecordsFromCliJson(cliRecordsPath);
+  }
+
   if (token) {
     return listRecordsFromApi(tableId, fieldIds);
   }
@@ -210,8 +229,8 @@ window.EPIC_CARS_ERAS = ${JSON.stringify(eras, null, 2)};
 await fs.mkdir(DATA_DIR, { recursive: true });
 
 const eras = buildEras(
-  await listRecords(CARS_TABLE_ID, CAR_FIELD_IDS, PUBLIC_READ_JSON),
-  await listRecords(SYMBOLS_TABLE_ID, SYMBOL_FIELD_IDS, SYMBOLS_PUBLIC_READ_JSON),
+  await listRecords(CARS_TABLE_ID, CAR_FIELD_IDS, PUBLIC_READ_JSON, CARS_RECORDS_JSON),
+  await listRecords(SYMBOLS_TABLE_ID, SYMBOL_FIELD_IDS, SYMBOLS_PUBLIC_READ_JSON, SYMBOLS_RECORDS_JSON),
 );
 await assertAssetsExist(eras);
 await fs.writeFile(OUTPUT_PATH, renderDataFile(eras), 'utf8');

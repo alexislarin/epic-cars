@@ -470,9 +470,9 @@ window.EPIC_CARS_ERAS = [
       {
         "id": "reclFAd217y1bcEdD",
         "name": "Braun SK 4 “Snow White’s Coffin”",
-        "image": "reclFAd217y1bcEdD-attETSLEEouN2c4Ip.webp",
-        "width": 532,
-        "height": 375
+        "image": "reclFAd217y1bcEdD-attv1GmCvsT1ShOoa.webp",
+        "width": 1440,
+        "height": 1017
       },
       {
         "id": "recROO37y1u1jyy3r",

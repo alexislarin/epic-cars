@@ -8,19 +8,20 @@ export const CAR_IMAGE_ENCODING = {
 };
 
 const CAR_IMAGE_OVERRIDES = {
-  rec0vcUzCwjYDjG0R: { mode: 'contain' },
-  rec40KzSZ0KGibypX: { mode: 'contain' },
-  rec7Ja8p7sMbcM5wN: { mode: 'contain' },
+  // These images must use a true crop; contain adds a blurred artificial background.
+  rec0vcUzCwjYDjG0R: { mode: 'cover' },
+  rec40KzSZ0KGibypX: { mode: 'cover' },
+  rec7Ja8p7sMbcM5wN: { mode: 'cover' },
   rec9TjLXob85jhgmg: { mode: 'cover', focus: { x: 0, y: 0.5 } },
-  recEecRTQVxb99boR: { mode: 'contain' },
+  recEecRTQVxb99boR: { mode: 'cover' },
   recEnqgKW83SD8JiB: { mode: 'cover', focus: { x: 1, y: 0.5 } },
   recJNucojmjwql69B: { mode: 'contain' },
   recLD8k0UI7kuWBLt: { mode: 'contain' },
-  recX4ibHBwzdW7GA0: { mode: 'contain' },
-  recYeVnWbPMhZUP3R: { mode: 'contain' },
+  recX4ibHBwzdW7GA0: { mode: 'cover' },
+  recYeVnWbPMhZUP3R: { mode: 'cover' },
   recoTw3a9HXkAFbYg: { mode: 'contain' },
-  recsY8Ve26Tejm1jf: { mode: 'contain' },
-  recu9M490cUdoJOBe: { mode: 'contain' },
+  recsY8Ve26Tejm1jf: { mode: 'cover' },
+  recu9M490cUdoJOBe: { mode: 'cover' },
   recxzMVUovjzuYzg2: { mode: 'contain' },
   recykNerxwJmuQYSX: { mode: 'contain' },
 };
@@ -54,7 +55,8 @@ const CAR_IMAGE_INSTRUCTIONS = {
   rec9TjLXob85jhgmg: '// crop from the top',
   recUSMerrHyDG9uTU: '// crop from the top',
   recB6Deii90DQZuuX: '// crop from the top',
-  recf12F47iMxjXTEi: '// crop from the right',
+  recf12F47iMxjXTEi: '// crop from the left',
+  recZrn49mJDuSLBDo: '// crop from the top',
   rec90bOSNsdiXgD3x: '// crop from the right',
 };
 
